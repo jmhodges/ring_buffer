@@ -1,0 +1,6 @@
+*.jar
+*.class
+*.lock
+*.log
+target
+lib_managed
