@@ -5,7 +5,7 @@ trait RingBuffer[T] {
   def add(obj: T) : Long
   def get(slot: Long) : T
   def capacity: Long
-  def writeCount : AtomicLong
+  def latestSlot : AtomicLong
 }
 
 class InvalidPowerOfTwoForCapacity(msg:String) extends RuntimeException(msg) {
@@ -14,30 +14,44 @@ class InvalidPowerOfTwoForCapacity(msg:String) extends RuntimeException(msg) {
   }
 }
 
-// Only works well with one writer that can check the readers
-// readCount against CASRingBuffer#writeCount. Multiple readers can be
-// maintained if they check their readCount against
-// CASRingBuffer#writeCount.
-class CASRingBuffer[T : ClassManifest](powerOfTwoForCapacity: Long) {
+// Only works well with one writer that can check it's last seen slot
+// against AtomicRingBuffer#latestSlot. Multiple readers can be
+// maintained if they check their readSlot against
+// AtomicRingBuffer#latestSlot. slots returned from #latestSlot and #get
+// are in the range 0 to (2**63 - 1), inclusively.
+class AtomicRingBuffer[T : ClassManifest](powerOfTwoForCapacity: Int) extends RingBuffer[T] {
   if (powerOfTwoForCapacity > 30 || powerOfTwoForCapacity < 1) {
     throw new InvalidPowerOfTwoForCapacity(powerOfTwoForCapacity)
   }
 
-  val cap = scala.math.pow(2, powerOfTwoForCapacity).toInt
-  private val inner = new Array[T](cap)
-  private var innerWriteCount = new AtomicLong(0)
-  var publicWriteCount = new AtomicLong(0)
+  // cap is volatile to allow a writer in another thread to busy-wait
+  // if a buffer would overflow. Unnecessary until we get multiple writers.
+  @volatile var cap = scala.math.pow(2, powerOfTwoForCapacity).toInt
+
+  private val inner = new Array[T](cap) // The array to hold the items.
+  private var innerWriteCount = new AtomicLong(-1)
+  private var publicWriteCount = new AtomicLong(-1)
 
   // FIXME should provide a jvm bytecode version that does object reuse
   def add(obj: T) : Long = {
-    // claim our slot by getting the current count and incrementing
+    // Claim our slot by getting the current count and incrementing
     // over its spot.
-    val slot = innerWriteCount.getAndIncrement()
+    // This and the `slot+1` on publicWriteCount#compareAndSet() mean
+    // that latestSlot is always increasing.
+    val slot = innerWriteCount.incrementAndGet()
     inner((slot % cap).toInt) = obj
 
-    // FIXME Should set an inconsistency flag on obj (and give up)
-    // after so many iterations.
-    while (!publicWriteCount.compareAndSet(slot, slot+1)) {}
+    // This compareAndSet is how, I believe, more than one writer
+    // thread can be maintained at a time. You may be confused and
+    // wonder why we can't just `publicWriteCount += 1`. Consider if
+    // the modulus calculation above freezes up for a while for slot
+    // 1. If the add for slot 2 speeds past it, and it increments
+    // publicWriteCount naively, we will have said that slot 1 was
+    // ready, when it was not.
+    while (!publicWriteCount.compareAndSet(slot-1, slot)) {
+      // FIXME Should set an inconsistency flag on obj and throw an
+      // error after so many iterations.
+    }
     return slot
   }
 
@@ -47,5 +61,36 @@ class CASRingBuffer[T : ClassManifest](powerOfTwoForCapacity: Long) {
   }
 
   def capacity = cap
-  def writeCount = publicWriteCount
+
+  // latestSlot is always increasing. Eventually, it will hit 2**63
+  // and overflow. If an item comes in once a nanosecond, we will
+  // have 292 years before that occurs. By then, the process is
+  // likely to have been restarted.
+  def latestSlot = publicWriteCount
+}
+
+// Use only one Writer per thread.
+class Writer[T : ClassManifest](buf: RingBuffer[T]) {
+  private var slot = new AtomicLong(-1) // atomic for testing
+  def write(obj: T) : Unit = {
+    slot.set(buf.add(obj))
+  }
+
+  // The last slot written to by this writer
+  def sequence : Long = slot.get
+}
+
+// Use only one Reader per thread.
+class Reader[T : ClassManifest](buf: RingBuffer[T]) {
+  private var slot = new AtomicLong(-1) // atomic for testing
+
+  // Reads only one item from the buffer
+  def read : T = {
+    val rSlot = slot.incrementAndGet // increment is important.
+    while (buf.latestSlot.get < rSlot) {}
+    buf.get(rSlot)
+  }
+
+  // The latest slot this reader has grabbed
+  def sequence : Long = slot.get
 }
