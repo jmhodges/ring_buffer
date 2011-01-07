@@ -70,15 +70,31 @@ class AtomicRingBuffer[T : ClassManifest](powerOfTwoForCapacity: Int) extends Ri
   def latestSlot = publicWriteCount
 }
 
-// Use only one Writer per thread.
-class Writer[T : ClassManifest](buf: RingBuffer[T]) {
+// Use only one Writer per thread. We need the readers and the total
+// number of Writers for that RingBuffer so that we can determine if
+// we need to block on a write that would overflow the buffer before
+// all of the Readers have read the data.
+
+class Writer[T : ClassManifest](buf: RingBuffer[T], readers: List[Reader[T]], numOfWriters: Int) {
+
   var slot = new AtomicLong(-1) // atomic for testing
+  val maxReaderDistanceFromWriter = buf.capacity - numOfWriters
+
   def write(obj: T) : Unit = {
+    while (atLeastOneReaderIsTooFarBehind()) {}
     slot.set(buf.add(obj))
   }
 
   // The last slot written to by this writer
   def sequence : Long = slot.get
+
+  private
+  def atLeastOneReaderIsTooFarBehind() : Boolean = {
+    readers.exists {
+      reader =>
+        sequence - reader.sequence > maxReaderDistanceFromWriter
+    }
+  }
 }
 
 // Use only one Reader per thread.
