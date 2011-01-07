@@ -71,7 +71,7 @@ class AtomicRingBuffer[T : ClassManifest](powerOfTwoForCapacity: Int) extends Ri
 
 // Use only one Writer per thread.
 class Writer[T : ClassManifest](buf: RingBuffer[T]) {
-  private var slot = new AtomicLong(-1) // atomic for testing
+  var slot = new AtomicLong(-1) // atomic for testing
   def write(obj: T) : Unit = {
     slot.set(buf.add(obj))
   }
@@ -82,7 +82,7 @@ class Writer[T : ClassManifest](buf: RingBuffer[T]) {
 
 // Use only one Reader per thread.
 class Reader[T : ClassManifest](buf: RingBuffer[T]) {
-  private var slot = new AtomicLong(-1) // atomic for testing
+  var slot = new AtomicLong(-1) // atomic for testing
 
   // Reads only one item from the buffer
   def read : T = {
