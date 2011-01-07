@@ -5,7 +5,7 @@ trait RingBuffer[T] {
   def add(obj: T) : Long
   def get(slot: Long) : T
   def capacity: Long
-  def latestSlot : AtomicLong
+  def latestSlot : Long
 }
 
 class InvalidPowerOfTwoForCapacity(msg:String) extends RuntimeException(msg) {
@@ -28,34 +28,20 @@ class AtomicRingBuffer[T : ClassManifest](powerOfTwoForCapacity: Int) extends Ri
 
   // FIXME atomic reference array?
   private val inner = new AtomicReferenceArray[T](cap) // The array to hold the items.
-  private var innerWriteCount = new AtomicLong(-1)
-  private var publicWriteCount = new AtomicLong(-1)
+  private var nextSequence = new AtomicLong(0)
+  @volatile private var cursor = -1L
 
   // FIXME should provide a jvm bytecode version that does object reuse
   def add(obj: T) : Long = {
-    // Claim our slot by getting the current count and incrementing
-    // over its spot.
-    // This and the `slot+1` on publicWriteCount#compareAndSet() mean
-    // that latestSlot is always increasing.
-    val slot = innerWriteCount.incrementAndGet()
-    inner.getAndSet((slot % cap).toInt, obj)
-
-    // This compareAndSet is how, I believe, more than one writer
-    // thread can be maintained at a time. You may be confused and
-    // wonder why we can't just `publicWriteCount += 1`. Consider if
-    // the modulus calculation above freezes up for a while for slot
-    // 1. If the add for slot 2 speeds past it, and it increments
-    // publicWriteCount naively, we will have said that slot 1 was
-    // ready, when it was not.
-    while (!publicWriteCount.compareAndSet(slot-1, slot)) {
-      // FIXME Should set an inconsistency flag on obj and throw an
-      // error after so many iterations.
-    }
-    return slot
+    val seq = nextSequence.getAndIncrement
+    inner.getAndSet((seq % cap).toInt, obj)
+    while (cursor != (seq - 1)) {}
+    cursor = seq
+    return seq
   }
 
   def get(slot: Long) : T = {
-    while (slot > publicWriteCount.get()) {}
+    while (slot > cursor) {}
     return inner.get((slot % cap).toInt)
   }
 
@@ -65,7 +51,7 @@ class AtomicRingBuffer[T : ClassManifest](powerOfTwoForCapacity: Int) extends Ri
   // and overflow. If an item comes in once a nanosecond, we will
   // have 292 years before that occurs. By then, the process is
   // likely to have been restarted.
-  def latestSlot = publicWriteCount
+  def latestSlot = cursor
 }
 
 // Use only one Writer per thread. We need the readers and the total
@@ -105,7 +91,7 @@ class Reader[T : ClassManifest](buf: RingBuffer[T]) {
     // don't announce that we've read the slot by incrementing slot
     // before we actually have read it.
     val rSlot = slot.get + 1
-    while (buf.latestSlot.get < rSlot) {}
+    while (buf.latestSlot < rSlot) {}
     val ret = buf.get(rSlot)
     slot.incrementAndGet
     ret

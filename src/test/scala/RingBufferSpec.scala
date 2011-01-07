@@ -64,7 +64,7 @@ class AtomicRingBufferSpec extends Specification {
       val expectedReadSlots = 0.until(numOfReaders).map( i => endSlot ).toList
       val actualReadSlots = readers.map(_.sequence)
       actualReadSlots mustEqual expectedReadSlots
-      buf.latestSlot.get mustEqual endSlot
+      buf.latestSlot mustEqual endSlot
     }
 
     "handle lots of writers with more items than capacity" in {
