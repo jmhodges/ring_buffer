@@ -28,6 +28,7 @@ class AtomicRingBuffer[T : ClassManifest](powerOfTwoForCapacity: Int) extends Ri
   // if a buffer would overflow. Unnecessary until we get multiple writers.
   @volatile var cap = scala.math.pow(2, powerOfTwoForCapacity).toInt
 
+  // FIXME atomic reference array?
   private val inner = new Array[T](cap) // The array to hold the items.
   private var innerWriteCount = new AtomicLong(-1)
   private var publicWriteCount = new AtomicLong(-1)
