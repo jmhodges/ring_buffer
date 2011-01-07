@@ -67,18 +67,6 @@ class AtomicRingBufferSpec extends Specification {
       buf.latestSlot.get mustEqual endSlot
     }
 
-    class WritingThread(w: Writer[Int],
-                        i: Int,
-                        delta: Int, max: Int) extends Thread {
-      override def run = {
-        var item = i
-        while (item < max) {
-          w.write(item)
-          item += delta
-        }
-      }
-    }
-
     "handle lots of writers with more items than capacity" in {
       val buf = new AtomicRingBuffer[Int](10)
       val numOfWritesToMake = 10000
