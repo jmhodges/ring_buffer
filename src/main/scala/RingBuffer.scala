@@ -86,9 +86,14 @@ class Reader[T : ClassManifest](buf: RingBuffer[T]) {
 
   // Reads only one item from the buffer
   def read : T = {
-    val rSlot = slot.incrementAndGet // increment is important.
+    // get the index of the next slot (not the last one read) but
+    // don't announce that we've read the slot by incrementing slot
+    // before we actually have read it.
+    val rSlot = slot.get + 1
     while (buf.latestSlot.get < rSlot) {}
-    buf.get(rSlot)
+    val ret = buf.get(rSlot)
+    slot.incrementAndGet
+    ret
   }
 
   // The latest slot this reader has grabbed
