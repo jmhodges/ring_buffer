@@ -10,7 +10,7 @@ trait RingBuffer[T] {
 
 class InvalidPowerOfTwoForCapacity(msg:String) extends RuntimeException(msg) {
   def this(powerOfTwoForCapacity: Int) = {
-    this("Power of two for RingBuffer capacity must be between 1 and 30 (inclusive). It was %d".format(powerOfTwoForCapacity))
+    this("Power of two for RingBuffer capacity must be between 1 and 30 (inclusive) to ensure speedy modulus calculations. It was %d".format(powerOfTwoForCapacity))
   }
 }
 
