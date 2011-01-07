@@ -1,5 +1,5 @@
 package com.somethingsimilar.ring_buffer
-import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.{AtomicLong, AtomicReferenceArray}
 
 trait RingBuffer[T] {
   def add(obj: T) : Long
@@ -26,7 +26,7 @@ class AtomicRingBuffer[T : ClassManifest](powerOfTwoForCapacity: Int) extends Ri
   @volatile var cap = scala.math.pow(2, powerOfTwoForCapacity).toInt
 
   // FIXME atomic reference array?
-  private val inner = new Array[T](cap) // The array to hold the items.
+  private val inner = new AtomicReferenceArray[T](cap) // The array to hold the items.
   private var innerWriteCount = new AtomicLong(-1)
   private var publicWriteCount = new AtomicLong(-1)
 
@@ -37,7 +37,7 @@ class AtomicRingBuffer[T : ClassManifest](powerOfTwoForCapacity: Int) extends Ri
     // This and the `slot+1` on publicWriteCount#compareAndSet() mean
     // that latestSlot is always increasing.
     val slot = innerWriteCount.incrementAndGet()
-    inner((slot % cap).toInt) = obj
+    inner.getAndSet((slot % cap).toInt, obj)
 
     // This compareAndSet is how, I believe, more than one writer
     // thread can be maintained at a time. You may be confused and
@@ -55,7 +55,7 @@ class AtomicRingBuffer[T : ClassManifest](powerOfTwoForCapacity: Int) extends Ri
 
   def get(slot: Long) : T = {
     while (slot > publicWriteCount.get()) {}
-    return inner((slot % cap).toInt)
+    return inner.get((slot % cap).toInt)
   }
 
   def capacity = cap
