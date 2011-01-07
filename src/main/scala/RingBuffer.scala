@@ -14,6 +14,7 @@ class InvalidPowerOfTwoForCapacity(msg:String) extends RuntimeException(msg) {
   }
 }
 
+// Assumption: Old data is more good than new data. Block on writes.
 // slots returned from #latestSlot and #get are in the range 0 to
 // (2**63 - 1), inclusively.
 class AtomicRingBuffer[T : ClassManifest](powerOfTwoForCapacity: Int) extends RingBuffer[T] {
