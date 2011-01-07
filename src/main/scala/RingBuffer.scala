@@ -14,11 +14,8 @@ class InvalidPowerOfTwoForCapacity(msg:String) extends RuntimeException(msg) {
   }
 }
 
-// Only works well with one writer that can check it's last seen slot
-// against AtomicRingBuffer#latestSlot. Multiple readers can be
-// maintained if they check their readSlot against
-// AtomicRingBuffer#latestSlot. slots returned from #latestSlot and #get
-// are in the range 0 to (2**63 - 1), inclusively.
+// slots returned from #latestSlot and #get are in the range 0 to
+// (2**63 - 1), inclusively.
 class AtomicRingBuffer[T : ClassManifest](powerOfTwoForCapacity: Int) extends RingBuffer[T] {
   if (powerOfTwoForCapacity > 30 || powerOfTwoForCapacity < 1) {
     throw new InvalidPowerOfTwoForCapacity(powerOfTwoForCapacity)
