@@ -1,19 +1,6 @@
 package com.somethingsimilar.ring_buffer
 import java.util.concurrent.atomic.{AtomicLong, AtomicReferenceArray}
 
-trait RingBuffer[T] {
-  def add(obj: T) : Long
-  def get(slot: Long) : T
-  def capacity: Long
-  def latestSlot : Long
-}
-
-class InvalidPowerOfTwoForCapacity(msg:String) extends RuntimeException(msg) {
-  def this(powerOfTwoForCapacity: Int) = {
-    this("Power of two for RingBuffer capacity must be between 1 and 30 (inclusive) to ensure speedy modulus calculations. It was %d".format(powerOfTwoForCapacity))
-  }
-}
-
 // Assumption: Old data is more good than new data. Block on writes.
 // slots returned from #latestSlot and #get are in the range 0 to
 // (2**63 - 1), inclusively.
