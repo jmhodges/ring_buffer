@@ -8,7 +8,7 @@ class AtomicRingBufferSpec extends Specification {
     "be fine with one write and one read" in {
       val buf = new AtomicRingBuffer[Int](2)
       val reader = new Reader[Int](buf)
-      val writer = new Writer[Int](buf, List(reader), 1)
+      val writer = new Writer[Int](buf, Array(reader), 1)
       reader.sequence mustEqual -1 // uninitialized
       writer.sequence mustEqual -1 // uninitialized
 
@@ -30,7 +30,7 @@ class AtomicRingBufferSpec extends Specification {
       val endSlot = (numOfWritesToMake - 1).toLong
       val numOfReaders = 50
 
-      val readers = 0.until(numOfReaders).map(i => new Reader[Int](buf)).toList
+      val readers = 0.until(numOfReaders).map(i => new Reader[Int](buf)).toArray
       val writer = new Writer[Int](buf, readers, 1)
 
       val readerThreads = readers.map {
@@ -63,7 +63,7 @@ class AtomicRingBufferSpec extends Specification {
 
       val expectedReadSlots = 0.until(numOfReaders).map( i => endSlot ).toList
       val actualReadSlots = readers.map(_.sequence)
-      actualReadSlots mustEqual expectedReadSlots
+      actualReadSlots.toList must containInOrder(expectedReadSlots)
       buf.latestSlot mustEqual endSlot
     }
 
@@ -76,7 +76,7 @@ class AtomicRingBufferSpec extends Specification {
       val reader = new Reader[Int](buf)
       val writers = 0.until(numOfWriters).map{
         i =>
-          new Writer(buf, List(reader), numOfWriters)
+          new Writer(buf, Array(reader), numOfWriters)
       }.toList
 
       val writerThreads = writers.zipWithIndex.map {
