@@ -7,7 +7,7 @@ import java.util.concurrent.atomic.AtomicLong;
 // we need to block on a write that would overflow the buffer before
 // all of the Readers have read the data.
 
-class Writer<T> {
+public class Writer<T> {
   RingBuffer<T> buf;
   Reader<T>[] readers;
   int numOfWriters;
@@ -15,23 +15,22 @@ class Writer<T> {
 
   AtomicLong slot = new AtomicLong(-1); // atomic for testing
 
-  Writer(RingBuffer<T> buf, Reader<T>[] readers, int numOfWriters) {
+  public Writer(RingBuffer<T> buf, Reader<T>[] readers, int numOfWriters) {
     this.buf = buf;
     this.readers = readers;
     this.numOfWriters = numOfWriters;
     this.maxReaderDistanceFromWriter = buf.capacity() - numOfWriters;
   }
 
-  void write(T obj) {
+  public void write(T obj) {
     while (atLeastOneReaderIsTooFarBehind()) {}
     slot.set(buf.add(obj));
   }
 
   // The last slot written to by this writer
-  long sequence() { return slot.get(); }
+  public long sequence() { return slot.get(); }
 
-  private
-  boolean atLeastOneReaderIsTooFarBehind() {
+  private boolean atLeastOneReaderIsTooFarBehind() {
     for (Reader<T> reader : readers) {
       if (sequence() - reader.sequence() > maxReaderDistanceFromWriter) {
         return true;
