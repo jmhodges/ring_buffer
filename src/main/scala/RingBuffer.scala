@@ -23,7 +23,7 @@ class AtomicRingBuffer[T : ClassManifest](powerOfTwoForCapacity: Int) extends Ri
   }
 
   // cap is volatile to allow a writer in another thread to busy-wait
-  // if a buffer would overflow. Unnecessary until we get multiple writers.
+  // if a buffer would overflow.
   @volatile var cap = scala.math.pow(2, powerOfTwoForCapacity).toInt
 
   // FIXME atomic reference array?
