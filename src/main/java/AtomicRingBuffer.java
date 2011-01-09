@@ -27,7 +27,7 @@ class AtomicRingBuffer<T> implements RingBuffer<T> {
   // FIXME should provide a jvm bytecode version that does object reuse
   public long add(T obj) {
     long seq = nextSequence.getAndIncrement();
-    inner.getAndSet((int) seq % cap, obj);
+    inner.getAndSet((int) (seq % ((long) cap)), obj);
     while (cursor != (seq - 1)) {}
     this.cursor = seq;
     return seq;
@@ -35,7 +35,7 @@ class AtomicRingBuffer<T> implements RingBuffer<T> {
 
   public T get(long slot) {
     while (slot > cursor) {}
-    return inner.get((int) slot % cap);
+    return inner.get((int) (slot % ((long) cap)));
   }
 
   public int capacity() { return cap; }
