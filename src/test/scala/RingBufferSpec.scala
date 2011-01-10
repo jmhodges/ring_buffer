@@ -69,7 +69,7 @@ class AtomicRingBufferSpec extends Specification {
 
     "handle lots of writers with more items than capacity" in {
       val buf = new AtomicRingBuffer[Int](10)
-      val numOfWritesToMake = 3000
+      val numOfWritesToMake = 10000
       val endSlot = (numOfWritesToMake - 1).toLong
       val numOfWriters = 50
 
