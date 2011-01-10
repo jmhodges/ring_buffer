@@ -13,7 +13,7 @@ public class Writer<T> {
   int numOfWriters;
   int maxReaderDistanceFromWriter;
 
-  AtomicLong slot = new AtomicLong(-1); // atomic for testing
+  AtomicLong slot = new AtomicLong(-1);
 
   public Writer(RingBuffer<T> buf, Reader<T>[] readers, int numOfWriters) {
     this.buf = buf;

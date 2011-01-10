@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 // Use only one Reader per thread.
 public class Reader<T> {
-  AtomicLong slot = new AtomicLong(-1); // atomic for testing
+  AtomicLong slot = new AtomicLong(-1);
   RingBuffer<T> buf;
 
   public Reader(RingBuffer<T> buf) {
