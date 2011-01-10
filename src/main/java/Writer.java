@@ -32,8 +32,8 @@ class Writer<T> {
 
   private
   boolean atLeastOneReaderIsTooFarBehind() {
-    for (Reader<T> reader : readers) {
-      if (sequence() - reader.sequence() > maxReaderDistanceFromWriter) {
+    for (int i=0; i < readers.length; i++) {
+      if (sequence() - readers[i].sequence() > maxReaderDistanceFromWriter) {
         return true;
       }
     }
