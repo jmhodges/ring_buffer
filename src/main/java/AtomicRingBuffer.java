@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 public class AtomicRingBuffer<T> implements RingBuffer<T> {
   private AtomicLong nextSequence = new AtomicLong(0);
   volatile private long cursor = -1L;
-  volatile int cap;
+  int cap;
   private T[] inner;
 
   @SuppressWarnings("unchecked")
@@ -18,8 +18,6 @@ public class AtomicRingBuffer<T> implements RingBuffer<T> {
       throw new InvalidPowerOfTwoForCapacity(powerOfTwoForCapacity);
     }
 
-    // cap is volatile to allow a writer in another thread to busy-wait
-    // if a buffer would overflow.
     this.cap = 1 << powerOfTwoForCapacity;
 
     this.inner = (T[]) new Object[cap];
