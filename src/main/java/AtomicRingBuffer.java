@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 // Assumption: Old data is more good than new data. Block on writes.
 // slots returned from #latestSlot and #get are in the range 0 to
 // (2**63 - 1), inclusively.
-class AtomicRingBuffer<T> implements RingBuffer<T> {
+public class AtomicRingBuffer<T> implements RingBuffer<T> {
   private AtomicLong nextSequence = new AtomicLong(0);
   volatile private long cursor = -1L;
   volatile int cap;
