@@ -10,8 +10,9 @@ public class AtomicRingBuffer<T> implements RingBuffer<T> {
   private AtomicLong nextSequence = new AtomicLong(0);
   volatile private long cursor = -1L;
   volatile int cap;
-  private AtomicReferenceArray<T> inner;
+  private T[] inner;
 
+  @SuppressWarnings("unchecked")
   public AtomicRingBuffer(int powerOfTwoForCapacity) {
     if (powerOfTwoForCapacity > 30 || powerOfTwoForCapacity < 1) {
       throw new InvalidPowerOfTwoForCapacity(powerOfTwoForCapacity);
@@ -21,13 +22,13 @@ public class AtomicRingBuffer<T> implements RingBuffer<T> {
     // if a buffer would overflow.
     this.cap = 1 << powerOfTwoForCapacity;
 
-    this.inner = new AtomicReferenceArray<T>(cap);
+    this.inner = (T[]) new Object[cap];
   }
 
   // FIXME should provide a jvm bytecode version that does object reuse
   public long add(T obj) {
     long seq = nextSequence.getAndIncrement();
-    inner.getAndSet((int) (seq % ((long) cap)), obj);
+    inner[(int) (seq % ((long) cap))] = obj;
     while (cursor != (seq - 1)) {}
     this.cursor = seq;
     return seq;
@@ -35,7 +36,7 @@ public class AtomicRingBuffer<T> implements RingBuffer<T> {
 
   public T get(long slot) {
     while (slot > cursor) {}
-    return inner.get((int) (slot % ((long) cap)));
+    return inner[(int) (slot % ((long) cap))];
   }
 
   public int capacity() { return cap; }
