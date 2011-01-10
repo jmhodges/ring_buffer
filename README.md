@@ -1,4 +1,4 @@
-AtomicRingBuffer is a lock-less ring buffer written for the JVM. This is a
+AtomicRingBuffer is a lock-free ring buffer written for the JVM. This is a
 basic primitive required for the Disruptor architecture described in the [LMAX
 presentation](http://www.infoq.com/presentations/LMAX) at QCon San Francisco
 2010.
