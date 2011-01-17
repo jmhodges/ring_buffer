@@ -8,5 +8,7 @@ safely. While the `sequence` methods on both are safe to use from any thread,
 Writers and Readers in the Disruptor pattern are meant to be used in only one
 thread.
 
-It would be desirable convenient read batching and the cute object
-pre-allocation as described in above presentation.
+It would be desirable to have convenient read batching and the cute object
+pre-allocation as described in above presentation. Also, top-level error
+handling in what LMAX calls the EventProcessor (here, roughly equivalent to a
+Reader)
