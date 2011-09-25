@@ -1,3 +1,6 @@
+Please don't use this. Look instead at the [Disruptor project](http://code.google.com/p/disruptor/) proper.
+--------------------
+
 [AtomicRingBuffer](https://github.com/jmhodges/ring_buffer/blob/master/src/main/java/AtomicRingBuffer.java)
 is a lock-free ring buffer written for the JVM. This is a basic primitive
 required for the Disruptor architecture described in the [LMAX
